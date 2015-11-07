@@ -1,0 +1,132 @@
+
+
+package sociaal;
+
+dialect "mvel"
+
+import jade.lang.acl.ACLMessage;
+import jade.domain.introspection.Event;
+import phat.agents.AgentPHATEvent;
+import phat.body.BodyUtils.BodyPosture;
+import phat.world.MonitorEventQueue;
+import phat.world.MonitorEventQueueImp;
+import phat.world.PHATCalendar;
+import sociaal.*;
+import sociaal.ontology.*;
+import sociaal.*;
+import sociaal.norms.*;
+
+rule "init"
+when
+then
+	insert(new Partner("system"));
+	NormPerformanceDisplay.getInstance().addPartner("system");
+end
+
+
+rule "Clean working memory. Remove events older than 2 seconds"
+when
+		$f2: AgentPHATEvent()
+		$f1: AgentPHATEvent(time-$f2.getTime()>60000)
+then
+		retract( $f2 ) ;
+		System.out.println("cleaning too old fact"+$f2.toString);
+end
+
+/*******************************************************/
+// Norm violation detection
+/*******************************************************/
+
+
+rule "violation detected: AssistWhilePatientDrinks"
+when 
+
+	$ap1: ActionPerformed(responsible=="E3Patient",actionType=="Drink")
+
+	not (ActionPerformed(responsible=="E3Patient",actionType!="WaitTask" && actionType!="AskForHelp" && actionType!="WaitForBodyClose" ,getTime()>$ap1.getTime())
+	or ActionPerformed(responsible=="E3Husband",actionType=="GoToBodyLoc",getTime()-$ap1.getTime()<3000))
+	exists (ActionPerformed(getTime()>$ap1.getTime() && getTime()-$ap1.getTime()>2000))
+then
+	insertLogical(new AssistWhilePatientDrinks("ViolatedAssistWhilePatientDrinks","E3Husband",this));
+	NormPerformanceDisplay.getInstance().addViolation("AssistWhilePatientDrinks","E3Husband");
+end
+
+rule "violation restored: AssistWhilePatientDrinks"
+when 
+	$v: AssistWhilePatientDrinks(name=="ViolatedAssistWhilePatientDrinks",responsible=="E3Husband")
+	ActionPerformed(responsible=="E3Husband",actionType=="GoToBodyLoc")
+then
+	retract($v);
+end
+
+
+rule "violation detected: AssistanceIsGivenInCaseFall"
+when 
+
+	$ap1: ActionPerformed(responsible=="E3Patient",actionType=="FallTask")
+
+	not (ActionPerformed(responsible=="E3Patient",actionType!="WaitTask" && actionType!="AskForHelp" && actionType!="WaitForBodyClose" ,getTime()>$ap1.getTime())
+	or ActionPerformed(responsible=="E3Husband",actionType=="GoToBodyLoc",getTime()-$ap1.getTime()<3000))	
+then
+	insertLogical(new AssistanceIsGivenInCaseFall("ViolatedAssistanceIsGivenInCaseFall","E3Husband",this));
+	NormPerformanceDisplay.getInstance().addViolation("AssistanceIsGivenInCaseFall","E3Husband");
+end
+
+rule "violation restored: AssistanceIsGivenInCaseFall"
+when 
+	$v: AssistanceIsGivenInCaseFall(name=="ViolatedAssistanceIsGivenInCaseFall",responsible=="E3Husband")
+	ActionPerformed(responsible=="E3Husband",actionType=="GoToBodyLoc")
+then
+	retract($v);
+end
+
+
+
+/*******************************************************/
+// Punishment norms
+/*******************************************************/
+
+rule "punishment: if a punishment norm holds after with the periodicity indicated by the norm"
+	when 
+		$fn: PunishmentNorm()
+		$te: PerformPunishment(prule==$fn) 
+	then
+		$fn.performPunishment();
+		NormPerformanceDisplay.getInstance().addPunishment($fn.getName(),$fn.getResponsible());
+end
+
+/*******************************************************/
+// transforming events into meaningful institutional facts
+/*******************************************************/
+rule "countas: Identify participating partners"
+ salience 100
+	when
+ 		$ae: AgentPHATEvent()
+ 		not ($pa: (Partner(id.equals($ae.id))))
+	then
+		insert( new Partner($ae.getId()) ) ;
+		NormPerformanceDisplay.getInstance().addPartner($ae.getId());
+end
+
+rule "countas: Identify participating agents"
+ salience 100
+	when
+ 		$c1 : ACLMessage()
+ 		not ($pa: (AgentPartner(id.equals($c1.sender.getLocalName()))))		
+	then
+		insert( new AgentPartner($c1.sender.getLocalName()) ) ;
+		NormPerformanceDisplay.getInstance().addPartner($c1.sender.getLocalName());
+end
+
+
+rule "countas: action performed by an individual"
+ salience 100
+	when
+ 		$ae: AgentPHATEvent()
+	then
+		insertLogical( new ActionPerformed($ae.getId(),$ae.getActionType()),$ae.getTime() ) ;
+end
+
+
+
+

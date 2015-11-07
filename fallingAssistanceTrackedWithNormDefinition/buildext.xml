@@ -1,0 +1,18 @@
+
+<project>
+
+<target name="runSim1" depends="compile">
+        <java fork="true" failonerror="true" maxmemory="300m"
+              classname="phat.sim.MainSim1PHATSimulation">
+		<classpath>			  
+			<pathelement path="${maven.build.outputDir}" />
+			<pathelement path="${mavenclasspath}" />              
+		</classpath>
+        </java>
+</target>
+  <target name="packageSim1" depends="compile">
+   <maven basedir="${pom.dir}" goal="package" resultproperty="maven.build.result" options="-e -Dbuild.for.prod=false -Djavac.debug=true -Djavac.optimize=false -Dshade.mainName=Sim1 -Dshade.mainClass=phat.sim.MainSim1PHATSimulation"/>
+ </target>
+
+
+</project>
