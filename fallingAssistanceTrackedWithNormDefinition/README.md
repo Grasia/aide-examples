@@ -34,11 +34,9 @@ When the patient has low tremors:
 - the caregiver returns to washing
 - the caretaker returns to the kitchen and the actions start over again.
 
-While running these activities, the system can evaluate to what extent the norms are being violated. As time goes by, violations are accounted as well as for how long the norm remained invalid. 
+While running these activities, the system can evaluate to what extent the norms are being violated. As time goes by, violations are accounted as well as for how long the norm remained invalid. The low tremors simulation induces less norm violations, while the high tremors produces a greater number.
 
-The monitoring assumes no perfect execution is possible. The worst execution is the one that has no assistance on behalf AAL solutions. Solutions for assisting the patient will make the To prevent norms being violated or reduce the number of times they are violated or the duration of the invalid status.
-
-However, the different solutions to issue alarms when the caretaker spends too much time while drinking or when falling down, will obtain less negative scores 
+The monitoring assumes no perfect execution is possible. The worst execution is the one that has no assistance on behalf AAL solutions. Solutions for assisting the patient will make reduce the number of times being violated or reduce the number of times they are violated or the duration of the invalid status. The less violations, the better the solution is.
 
 ### Instructions
 
@@ -68,6 +66,11 @@ If a high tremors is expected, launch instead:
 
 The simulation itself can be stopped and launched, but it may require to relaunch the monitoring too, to prevent faulty norm detection.
 
+### Defining norms
+
+To define norms, the SociAALML language has to be used. The example defines a digram "Norm sample" of type "NormDefinition". Norms in the diagram are AssistanceIsGivenInCaseFall, AssistWhilePatientDrinks, and MustNotWashDishes. A norm is an instance of *ConsecutiveActions* entity. It affects a person and expects it to do, or not to do, a particular action. When the action is expected to be, or not to be, performed is defined by an instance of *AnotherActionHappens*. This entity identifies a time window upon which the occurence of the action makes the entity to trigger the norm violation. A norm specifies too the deontic action. It declares wether the target is expected to do (obligation) or not to do (prohibition) a the particular action. 
+
+There can be many diagrams like this one. They will be compiled to a set of executable entities which are processed by the Norm Monitor. For this to happen, the specification has to be recompiled. So, after modifying the norms, a **mvn compile** will have to be executed. 
 
 ### REQUIREMENTS:
 
